@@ -1,36 +1,43 @@
 FROM alpine:3.19
 
-# نصب ابزارهای حرفه‌ای
+# نصب ابزارهای لازم
 RUN apk add --no-cache curl bash supervisor libc6-compat
 
 WORKDIR /app
 
-# نصب پنل s-ui
-RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz \
-    && tar -xzf x-ui.tar.gz --strip-components=1 && rm x-ui.tar.gz && chmod +x x-ui
+# ۱. دانلود و نصب نسخه اصلی x-ui
+RUN mkdir xui_orig && cd xui_orig && \
+    curl -L https://github.com/vaxilu/x-ui/releases/download/0.3.4.4/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz && \
+    tar -xzf x-ui.tar.gz --strip-components=1 && rm x-ui.tar.gz && chmod +x x-ui
 
-# تنظیم Supervisord (برای اجرای همزمان دو پنل یا دو سرویس)
-RUN mkdir -p /etc/supervisor/conf.d
+# ۲. دانلود و نصب نسخه s-ui (Alireza)
+RUN mkdir xui_sanaei && cd xui_sanaei && \
+    curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz && \
+    tar -xzf x-ui.tar.gz --strip-components=1 && rm x-ui.tar.gz && chmod +x x-ui
+
+# ۳. تنظیم Supervisor برای مدیریت هر دو
 COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
 [supervisord]
 nodaemon=true
 user=root
 
-[program:x-ui]
-command=/app/x-ui
-directory=/app
+[program:x-ui-original]
+command=/app/xui_orig/x-ui
+directory=/app/xui_orig
 autostart=true
 autorestart=true
 
-[program:helper]
-command=python3 -m http.server 8080
-directory=/app
+[program:s-ui-alireza]
+command=/app/xui_sanaei/x-ui
+directory=/app/xui_sanaei
 autostart=true
 autorestart=true
 EOF
 
-# تنظیمات اولیه پنل
-RUN ./x-ui setting -username admin -password admin -port 3000 -webBasePath /panel/
+# تنظیمات پورت‌دهی
+# x-ui اصلی روی ۳۰۰۰ و s-ui روی ۳۰۰۱
+RUN ./xui_orig/x-ui setting -port 3000 -webBasePath /orig/ && \
+    ./xui_sanaei/x-ui setting -port 3001 -webBasePath /sanaei/
 
-EXPOSE 3000 8080
+EXPOSE 3000 3001
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
