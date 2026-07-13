@@ -1,21 +1,29 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache curl bash ca-certificates libc6-compat
+# نصب پیش‌نیازها شامل cloudflared
+RUN apk add --no-cache curl bash ca-certificates libc6-compat \
+    && curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared \
+    && chmod +x /usr/local/bin/cloudflared
 
 WORKDIR /app
 
-# دانلود و نصب پنل
+# دانلود و نصب پنل 3x-ui
 RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz \
     && tar -xzf x-ui.tar.gz --strip-components=1 \
     && rm x-ui.tar.gz \
     && chmod +x x-ui
 
-# ایجاد مستقیم اسکریپت اجرا داخل داکر‌فایل
+# ایجاد اسکریپت اجرا
 RUN echo '#!/bin/bash' > /app/run.sh && \
     echo './x-ui setting -port 2053 -webBasePath /managepanel/ || true' >> /app/run.sh && \
     echo './x-ui &' >> /app/run.sh && \
-    echo 'while true; do sleep 10; done' >> /app/run.sh && \
+    echo 'if [ -n "$TUNNEL_TOKEN" ]; then' >> /app/run.sh && \
+    echo '    cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN"' >> /app/run.sh && \
+    echo 'else' >> /app/run.sh && \
+    echo '    echo "No TUNNEL_TOKEN found, running in fallback mode..."' >> /app/run.sh && \
+    echo '    while true; do sleep 60; done' >> /app/run.sh && \
+    echo 'fi' >> /app/run.sh && \
     chmod +x /app/run.sh
 
-EXPOSE 3000
+EXPOSE 2053 80 443 8080 8443 51820
 CMD ["/app/run.sh"]
