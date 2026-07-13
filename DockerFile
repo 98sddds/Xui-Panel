@@ -1,0 +1,10 @@
+FROM ghcr.io/mhsanaei/3x-ui:latest
+
+# نصب ابزارهای مورد نیاز برای پایداری
+RUN apt-get update && apt-get install -y iproute2 curl
+
+# پورت پنل
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["/usr/local/x-ui/x-ui"]
