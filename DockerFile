@@ -1,29 +1,36 @@
 FROM alpine:3.19
 
-# نصب پیش‌نیازها شامل cloudflared
-RUN apk add --no-cache curl bash ca-certificates libc6-compat \
-    && curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared \
-    && chmod +x /usr/local/bin/cloudflared
+# نصب ابزارهای حرفه‌ای
+RUN apk add --no-cache curl bash supervisor libc6-compat
 
 WORKDIR /app
 
-# دانلود و نصب پنل 3x-ui
+# نصب پنل s-ui
 RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz \
-    && tar -xzf x-ui.tar.gz --strip-components=1 \
-    && rm x-ui.tar.gz \
-    && chmod +x x-ui
+    && tar -xzf x-ui.tar.gz --strip-components=1 && rm x-ui.tar.gz && chmod +x x-ui
 
-# ایجاد اسکریپت اجرا
-RUN echo '#!/bin/bash' > /app/run.sh && \
-    echo './x-ui setting -port 2053 -webBasePath /managepanel/ || true' >> /app/run.sh && \
-    echo './x-ui &' >> /app/run.sh && \
-    echo 'if [ -n "$TUNNEL_TOKEN" ]; then' >> /app/run.sh && \
-    echo '    cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN"' >> /app/run.sh && \
-    echo 'else' >> /app/run.sh && \
-    echo '    echo "No TUNNEL_TOKEN found, running in fallback mode..."' >> /app/run.sh && \
-    echo '    while true; do sleep 60; done' >> /app/run.sh && \
-    echo 'fi' >> /app/run.sh && \
-    chmod +x /app/run.sh
+# تنظیم Supervisord (برای اجرای همزمان دو پنل یا دو سرویس)
+RUN mkdir -p /etc/supervisor/conf.d
+COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
+[supervisord]
+nodaemon=true
+user=root
 
-EXPOSE 2053 80 443 8080 8443 51820
-CMD ["/app/run.sh"]
+[program:x-ui]
+command=/app/x-ui
+directory=/app
+autostart=true
+autorestart=true
+
+[program:helper]
+command=python3 -m http.server 8080
+directory=/app
+autostart=true
+autorestart=true
+EOF
+
+# تنظیمات اولیه پنل
+RUN ./x-ui setting -username admin -password admin -port 3000 -webBasePath /panel/
+
+EXPOSE 3000 8080
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
