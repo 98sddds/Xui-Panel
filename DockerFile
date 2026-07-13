@@ -1,16 +1,16 @@
 FROM alpine:3.19
 
-# نصب تمام ابزارها + cloudflared
 RUN apk add --no-cache \
     curl bash ca-certificates socat tzdata sqlite libc6-compat \
     && curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared \
-    && chmod +x /usr/local/bin/cloudflared \
-    && ln -sf /usr/share/zoneinfo/Asia/Tehran /etc/localtime
+    && chmod +x /usr/local/bin/cloudflared
 
-# دانلود x-ui
-RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
-    && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/ \
-    && rm /tmp/x-ui.tar.gz
+# ایجاد پوشه و نصب مستقیم در آن
+RUN mkdir -p /usr/local/x-ui \
+    && curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
+    && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/x-ui --strip-components=1 \
+    && rm /tmp/x-ui.tar.gz \
+    && chmod +x /usr/local/x-ui/x-ui
 
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
