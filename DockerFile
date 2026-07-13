@@ -1,19 +1,21 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache \
-    curl bash ca-certificates socat tzdata sqlite libc6-compat \
-    && curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared \
-    && chmod +x /usr/local/bin/cloudflared
+RUN apk add --no-cache curl bash ca-certificates libc6-compat
 
-# ایجاد پوشه و نصب مستقیم در آن
-RUN mkdir -p /usr/local/x-ui \
-    && curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
-    && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/x-ui --strip-components=1 \
-    && rm /tmp/x-ui.tar.gz \
-    && chmod +x /usr/local/x-ui/x-ui
+WORKDIR /app
 
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# دانلود و نصب پنل
+RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz \
+    && tar -xzf x-ui.tar.gz --strip-components=1 \
+    && rm x-ui.tar.gz \
+    && chmod +x x-ui
+
+# ایجاد مستقیم اسکریپت اجرا داخل داکر‌فایل
+RUN echo '#!/bin/bash' > /app/run.sh && \
+    echo './x-ui setting -port 2053 -webBasePath /managepanel/ || true' >> /app/run.sh && \
+    echo './x-ui &' >> /app/run.sh && \
+    echo 'while true; do sleep 10; done' >> /app/run.sh && \
+    chmod +x /app/run.sh
 
 EXPOSE 3000
-CMD ["/start.sh"]
+CMD ["/app/run.sh"]
