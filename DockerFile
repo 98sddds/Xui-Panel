@@ -1,19 +1,21 @@
 FROM alpine:3.19
 
-# نصب پیش‌نیازها
+# نصب ابزارهای لازم
 RUN apk add --no-cache curl bash supervisor nginx libc6-compat
 
 WORKDIR /app
 
-# ۱. دانلود پنل‌ها
+# دانلود پنل‌ها
 RUN mkdir -p xui_orig xui_sanaei && \
     curl -L https://github.com/vaxilu/x-ui/releases/download/0.3.4.4/x-ui-linux-amd64.tar.gz | tar -xzf - -C xui_orig --strip-components=1 && \
     curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz | tar -xzf - -C xui_sanaei --strip-components=1
 
-# ۲. تنظیم Nginx برای روت کردن ترافیک
-RUN echo 'events {} http { server { listen 59931; location /orig/ { proxy_pass http://127.0.0.1:3000/; } location /sanaei/ { proxy_pass http://127.0.0.1:3001/; } } }' > /etc/nginx/nginx.conf
+# تنظیم Nginx برای پورت 2053 و مسیرهای /xui و /sui
+RUN echo 'events {} http { server { listen 2053; \
+    location /xui/ { proxy_pass http://127.0.0.1:3000/; } \
+    location /sui/ { proxy_pass http://127.0.0.1:3001/; } } }' > /etc/nginx/nginx.conf
 
-# ۳. تنظیم Supervisor
+# تنظیم Supervisor
 COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
 [supervisord]
 nodaemon=true
@@ -37,9 +39,9 @@ autostart=true
 autorestart=true
 EOF
 
-# ۴. ست کردن پورت پنل‌ها
+# ست کردن پورت‌ها برای پنل‌ها
 RUN /app/xui_orig/x-ui setting -port 3000 -webBasePath / && \
     /app/xui_sanaei/x-ui setting -port 3001 -webBasePath /
 
-EXPOSE 59931
+EXPOSE 2053
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
