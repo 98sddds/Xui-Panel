@@ -1,24 +1,18 @@
 #!/bin/bash
 set -e
 
-# تنظیم پورت دریافتی از Railway (پیش‌فرض 3000)
-export PORT=${PORT:-3000}
+# ۱. اجرای Tunnel (توکن را در Railway به عنوان متغیر TUNNEL_TOKEN ست کنید)
+if [ -n "$TUNNEL_TOKEN" ]; then
+    echo "🔗 Starting Cloudflare Tunnel..."
+    cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN" &
+else
+    echo "⚠️ TUNNEL_TOKEN not found. Running without tunnel."
+fi
 
-echo "🚀 Starting X-UI on port $PORT..."
-
+# ۲. اجرای پنل
 cd /usr/local/x-ui
-
-# تنظیمات پایه پنل
 ./x-ui setting -port 2053 -webBasePath /managepanel/ || true
-
-# اجرای پنل در پس‌زمینه
 ./x-ui &
 
-# مانیتور برای اطمینان از بالا ماندن پنل
-while true; do
-  if ! pgrep -x "x-ui" > /dev/null; then
-    echo "❌ X-UI crashed! Restarting..."
-    exit 1
-  fi
-  sleep 10
-done
+# ۳. مانیتورینگ
+wait -n
