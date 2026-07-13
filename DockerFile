@@ -1,20 +1,19 @@
 FROM alpine:3.19
 
+# نصب تمام ابزارها + cloudflared
 RUN apk add --no-cache \
     curl bash ca-certificates socat tzdata sqlite libc6-compat \
+    && curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared \
+    && chmod +x /usr/local/bin/cloudflared \
     && ln -sf /usr/share/zoneinfo/Asia/Tehran /etc/localtime
 
-# دانلود و نصب آخرین نسخه 3x-ui
+# دانلود x-ui
 RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
     && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/ \
-    && rm /tmp/x-ui.tar.gz \
-    && chmod +x /usr/local/x-ui/x-ui
+    && rm /tmp/x-ui.tar.gz
 
-RUN mkdir -p /etc/x-ui /var/log/x-ui
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-# پورت Railway
 EXPOSE 3000
-
 CMD ["/start.sh"]
