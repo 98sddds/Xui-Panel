@@ -1,18 +1,51 @@
-FROM node:18-alpine
+# استفاده از نسخه پایدار دبیان
+FROM debian:bookworm-slim
 
-# نصب پیش‌نیازها برای اجرای پنل
-RUN apk add --no-cache git bash
+# نصب پیش‌نیازها و پکیج Tor
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    ca-certificates \
+    unzip \
+    tor \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
 
-# کلون کردن مخزن s-ui از گیت‌هاب
-RUN git clone https://github.com/alireza0/s-ui.git /app
-WORKDIR /app
+# دانلود و نصب آخرین نسخه 3x-ui
+RUN wget -O /tmp/x-ui.tar.gz https://github.com/mhsanaei/3x-ui/releases/latest/download/x-ui-linux-amd64.tar.gz \
+    && tar -zxvf /tmp/x-ui.tar.gz -C /usr/local/ \
+    && mv /usr/local/x-ui-linux-amd64 /usr/local/x-ui \
+    && rm /tmp/x-ui.tar.gz
 
-# نصب وابستگی‌ها
-RUN npm install
-RUN npm run build
+# ایجاد پوشه‌های ذخیره‌سازی داده‌های پنل و تور
+RUN mkdir -p /etc/x-ui /var/lib/tor/xui_service
 
-# اجرای پنل روی پورت 2053
-ENV PORT=2053
+# ساخت خودکار فایل تنظیمات تور (torrc)
+# فعال‌سازی پورت 9050 برای ساکس خروجی و تعریف آدرس Onion روی پورت 2053 پنل
+RUN echo "SocksPort 127.0.0.1:9050" > /etc/tor/torrc && \
+    echo "SocksPolicy accept 127.0.0.1" >> /etc/tor/torrc && \
+    echo "RunAsDaemon 0" >> /etc/tor/torrc && \
+    echo "DataDirectory /var/lib/tor" >> /etc/tor/torrc && \
+    echo "HiddenServiceDir /var/lib/tor/xui_service/" >> /etc/tor/torrc && \
+    echo "HiddenServicePort 80 127.0.0.1:2053" >> /etc/tor/torrc
+
+# ساخت خودکار اسکریپت استارت برای اجرای موازی سرویس‌ها و تنظیم دسترسی‌ها
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'mkdir -p /var/lib/tor/xui_service' >> /start.sh && \
+    echo 'chown -R debian-tor:debian-tor /var/lib/tor' >> /start.sh && \
+    echo 'chmod 700 /var/lib/tor/xui_service' >> /start.sh && \
+    echo 'tor -f /etc/tor/torrc &' >> /start.sh && \
+    echo 'sleep 6' >> /start.sh && \
+    echo 'if [ -f /var/lib/tor/xui_service/hostname ]; then' >> /start.sh && \
+    echo '  echo "=================================================="' >> /start.sh && \
+    echo '  echo "🌐 YOUR TOR ONION ADDRESS IS:"' >> /start.sh && \
+    echo '  cat /var/lib/tor/xui_service/hostname' >> /start.sh && \
+    echo '  echo "=================================================="' >> /start.sh && \
+    echo 'fi' >> /start.sh && \
+    echo 'cd /usr/local/x-ui && ./x-ui' >> /start.sh && \
+    chmod +x /start.sh
+
+# پورت پیش‌فرض پنل
 EXPOSE 2053
 
-CMD ["npm", "start"]
+CMD ["/start.sh"]
