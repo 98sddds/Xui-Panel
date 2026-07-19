@@ -1,10 +1,17 @@
-FROM ghcr.io/mhsanaei/3x-ui:latest
+FROM debian:bookworm-slim
 
-# نصب ابزارهای مورد نیاز برای پایداری
-RUN apt-get update && apt-get install -y iproute2 curl
+# نصب پیش‌نیازهای ضروری
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# پورت پنل
-ENV PORT=8080
-EXPOSE 8080
+# دانلود و نصب مستقیم پنل 3x-ui
+RUN wget -O /tmp/x-ui.tar.gz https://github.com/mhsanaei/3x-ui/releases/latest/download/x-ui-linux-amd64.tar.gz \
+    && tar -zxvf /tmp/x-ui.tar.gz -C /usr/local/ \
+    && mv /usr/local/x-ui-linux-amd64 /usr/local/x-ui \
+    && rm /tmp/x-ui.tar.gz
 
-CMD ["/usr/local/x-ui/x-ui"]
+# اجرای مستقیم پنل
+WORKDIR /usr/local/x-ui
+CMD ["./x-ui"]
