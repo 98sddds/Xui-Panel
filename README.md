@@ -241,9 +241,6 @@ Xui-Panel/
 | مخزن پروژه | [AyhanMansur/Xui-Panel](https://github.com/AyhanMansur/Xui-Panel) |
 | پنل اصلی ۳X-UI | [MHSanaei/3x-ui](https://github.com/mhsanaei/3x-ui) |
 | پلتفرم Railway | [railway.app](https://railway.app/) |
-| مستندات Xray-core | [XTLS/Xray-core](https://github.com/XTLS/Xray-core) |
-| آموزش Reality | [XTLS/Reality](https://github.com/XTLS/Reality) |
-
 ---
 
 ## 🤝 **مشارکت کنید!**
