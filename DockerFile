@@ -1,16 +1,10 @@
-FROM alpine:3.19
+FROM ghcr.io/mhsanaei/3x-ui:latest
 
-# دانلود و نصب آخرین نسخه 3x-ui
-RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o /tmp/x-ui.tar.gz \
-    && tar -xzf /tmp/x-ui.tar.gz -C /usr/local/ \
-    && rm /tmp/x-ui.tar.gz \
-    && chmod +x /usr/local/x-ui/x-ui
+# نصب ابزارهای مورد نیاز برای پایداری
+RUN apt-get update && apt-get install -y iproute2 curl
 
-RUN mkdir -p /etc/x-ui /var/log/x-ui
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# پورت پنل
+ENV PORT=8080
+EXPOSE 8080
 
-# پورت Railway
-EXPOSE 3000
-
-CMD ["/start.sh"]
+CMD ["/usr/local/x-ui/x-ui"]
