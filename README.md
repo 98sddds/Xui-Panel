@@ -1,12 +1,7 @@
 # 🚀 **Xui-Panel** | استقرار ابریِ ۳X-UI روی Railway  
 ### ✨ **بدون سرور، بدون دردسر، فقط یک کلیک**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/🚀-Deploy_on_Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white" />
-  <img src="https://img.shields.io/badge/🐳-Dockerized-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
-  <img src="https://img.shields.io/badge/⚡-3X--UI_v3.4.2-00C7B7?style=for-the-badge&logo=xray&logoColor=white" />
-  <img src="https://img.shields.io/badge/🛡️-VLESS+TCP+Reality-FF6B6B?style=for-the-badge" />
-</p>
+<p align="center"> <img src="https://img.shields.io/badge/Xui--Panel-v1.0-blue?logo=github" /> <img src="https://img.shields.io/badge/Based-Docker-2496ED?logo=docker" /> <img src="https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway" > </p>
 
 ---
 
