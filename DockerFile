@@ -1,21 +1,21 @@
-FROM debian:bookworm-slim
+FROM alpine:3.19
 
-# نصب تور و ابزارهای مورد نیاز
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget tor ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl bash ca-certificates libc6-compat
 
-# دانلود و نصب پنل 3x-ui
-RUN wget -O /tmp/x-ui.tar.gz https://github.com/mhsanaei/3x-ui/releases/latest/download/x-ui-linux-amd64.tar.gz \
-    && tar -zxvf /tmp/x-ui.tar.gz -C /usr/local/ \
-    && mv /usr/local/x-ui-linux-amd64 /usr/local/x-ui && rm /tmp/x-ui.tar.gz
+WORKDIR /app
 
-# ایجاد پوشه‌های تور و تنظیمات آن مستقیماً در کانتینر
-RUN mkdir -p /var/lib/tor/xui_service && \
-    echo "SocksPort 9050" > /etc/tor/torrc && \
-    echo "HiddenServiceDir /var/lib/tor/xui_service/" >> /etc/tor/torrc && \
-    echo "HiddenServicePort 80 127.0.0.1:2053" >> /etc/tor/torrc
+# دانلود و نصب پنل
+RUN curl -L https://github.com/mhsanaei/3x-ui/releases/download/v3.4.2/x-ui-linux-amd64.tar.gz -o x-ui.tar.gz \
+    && tar -xzf x-ui.tar.gz --strip-components=1 \
+    && rm x-ui.tar.gz \
+    && chmod +x x-ui
 
-# استفاده از یک خط دستور برای اجرای همزمان تور و پنل
-# این دستور جایگزین فایل start.sh می‌شود
-CMD tor & cd /usr/local/x-ui && ./x-ui
+# ایجاد مستقیم اسکریپت اجرا داخل داکر‌فایل
+RUN echo '#!/bin/bash' > /app/run.sh && \
+    echo './x-ui setting -port 2053 -webBasePath /managepanel/ || true' >> /app/run.sh && \
+    echo './x-ui &' >> /app/run.sh && \
+    echo 'while true; do sleep 10; done' >> /app/run.sh && \
+    chmod +x /app/run.sh
+
+EXPOSE 3000
+CMD ["/app/run.sh"]
